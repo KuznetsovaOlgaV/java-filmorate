@@ -1,12 +1,15 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -29,7 +32,6 @@ public class FilmController {
     public Film create(@RequestBody Film film) {
         log.info("Получен запрос на добавление фильма: {}", film);
         validateFilm(film);
-
         film.setId(++idCounter);
         films.put(film.getId(), film);
         log.info("Фильм успешно добавлен с id: {}", film.getId());
@@ -39,11 +41,10 @@ public class FilmController {
     @PutMapping
     public Film update(@RequestBody Film film) {
         log.info("Получен запрос на обновление фильма: {}", film);
-        if (!films.containsKey(film.getId())) {
+        if (!exists(film)) {
             log.error("Ошибка обновления: фильм с id {} не найден", film.getId());
             throw new ValidationException("Фильм с id = " + film.getId() + " не найден");
         }
-
         validateFilm(film);
         films.put(film.getId(), film);
         log.info("Фильм с id {} успешно обновлен", film.getId());
@@ -51,7 +52,7 @@ public class FilmController {
     }
 
     public void validateFilm(Film film) {
-        if (film.getName() == null || film.getName().isBlank()) {
+        if (!StringUtils.hasText(film.getName())) {
             log.warn("Валидация не пройдена: название фильма пустое");
             throw new ValidationException("Название фильма не может быть пустым");
         }
@@ -67,5 +68,9 @@ public class FilmController {
             log.warn("Валидация не пройдена: продолжительность фильма должна быть положительной");
             throw new ValidationException("Продолжительность фильма должна быть положительным числом");
         }
+    }
+
+    private boolean exists(Film film) {
+        return films.containsKey(film.getId());
     }
 }

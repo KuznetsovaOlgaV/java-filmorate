@@ -1,12 +1,15 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -26,7 +29,6 @@ public class UserController {
     public User create(@RequestBody User user) {
         log.info("Получен запрос на создание пользователя: {}", user);
         validateUser(user);
-
         user.setId(++idCounter);
         users.put(user.getId(), user);
         log.info("Пользователь успешно создан с id: {}", user.getId());
@@ -36,11 +38,10 @@ public class UserController {
     @PutMapping
     public User update(@RequestBody User user) {
         log.info("Получен запрос на обновление пользователя: {}", user);
-        if (!users.containsKey(user.getId())) {
+        if (!exists(user)) {
             log.error("Ошибка обновления: пользователь с id {} не найден", user.getId());
             throw new ValidationException("Пользователь с id = " + user.getId() + " не найден");
         }
-
         validateUser(user);
         users.put(user.getId(), user);
         log.info("Пользователь с id {} успешно обновлен", user.getId());
@@ -48,11 +49,11 @@ public class UserController {
     }
 
     public void validateUser(User user) {
-        if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
+        if (!StringUtils.hasText(user.getEmail()) || !user.getEmail().contains("@")) {
             log.warn("Валидация не пройдена: некорректный email");
             throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
         }
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
+        if (!StringUtils.hasText(user.getLogin()) || user.getLogin().contains(" ")) {
             log.warn("Валидация не пройдена: некорректный логин");
             throw new ValidationException("Логин не может быть пустым и содержать пробелы");
         }
@@ -61,9 +62,13 @@ public class UserController {
             throw new ValidationException("Дата рождения не может быть в будущем");
         }
         // Если имя для отображения пустое, используется логин
-        if (user.getName() == null || user.getName().isBlank()) {
+        if (!StringUtils.hasText(user.getName())) {
             log.info("Имя пользователя не указано, используется логин: {}", user.getLogin());
             user.setName(user.getLogin());
         }
+    }
+
+    private boolean exists(User user) {
+        return users.containsKey(user.getId());
     }
 }
