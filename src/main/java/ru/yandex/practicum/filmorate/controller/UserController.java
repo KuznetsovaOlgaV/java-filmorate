@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -40,7 +41,7 @@ public class UserController {
         log.info("Получен запрос на обновление пользователя: {}", user);
         if (!exists(user)) {
             log.error("Ошибка обновления: пользователь с id {} не найден", user.getId());
-            throw new ValidationException("Пользователь с id = " + user.getId() + " не найден");
+            throw new NotFoundException("Пользователь с id = " + user.getId() + " не найден"); // замена ValidationException на NotFoundException
         }
         validateUser(user);
         users.put(user.getId(), user);
@@ -61,7 +62,6 @@ public class UserController {
             log.warn("Валидация не пройдена: дата рождения указана в будущем");
             throw new ValidationException("Дата рождения не может быть в будущем");
         }
-        // Если имя для отображения пустое, используется логин
         if (!StringUtils.hasText(user.getName())) {
             log.info("Имя пользователя не указано, используется логин: {}", user.getLogin());
             user.setName(user.getLogin());
