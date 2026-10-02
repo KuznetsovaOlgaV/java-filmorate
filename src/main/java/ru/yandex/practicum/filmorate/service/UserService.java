@@ -110,6 +110,7 @@ public class UserService {
             user.setName(user.getLogin());
         }
     }
+
     // валидация существования пользователей в списке друзей
     private void validateFriends(User user) {
         if (user.getFriends() != null) {
