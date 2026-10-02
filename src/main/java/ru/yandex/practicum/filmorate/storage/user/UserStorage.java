@@ -15,4 +15,7 @@ public interface UserStorage {
     Collection<User> findAll();
 
     Optional<User> findById(Long id);
+
+    // проверка существования пользователя по id
+    boolean existsById(Long id);
 }

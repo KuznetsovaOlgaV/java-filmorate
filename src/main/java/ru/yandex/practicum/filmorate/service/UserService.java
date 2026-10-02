@@ -30,16 +30,23 @@ public class UserService {
 
     public User create(User user) {
         validateUser(user);
+        validateFriends(user);
         User created = userStorage.create(user);
         log.info("Пользователь успешно создан: {}", created);
         return created;
     }
 
+
     public User update(User user) {
         User oldUser = findById(user.getId());
         validateUser(user);
-        // Сохраняем уже существующих друзей при обновлении пользователя
-        user.setFriends(oldUser.getFriends());
+        // если не передан — сохраняем старых друзей иначе если передан — проверяем существование всех пользователей в списке friends
+        if (user.getFriends() == null || user.getFriends().isEmpty()) {
+            user.setFriends(oldUser.getFriends());
+        } else {
+            validateFriends(user);
+        }
+
         User updated = userStorage.update(user);
         log.info("Пользователь с id {} успешно обновлен", updated.getId());
         return updated;
@@ -101,6 +108,20 @@ public class UserService {
         if (!StringUtils.hasText(user.getName())) {
             log.info("Имя пользователя не указано, используется логин: {}", user.getLogin());
             user.setName(user.getLogin());
+        }
+    }
+    // валидация существования пользователей в списке друзей
+    private void validateFriends(User user) {
+        if (user.getFriends() != null) {
+            for (Long friendId : user.getFriends()) {
+                if (Objects.equals(user.getId(), friendId)) {
+                    throw new ValidationException("Пользователь не может добавить сам себя в друзья");
+                }
+                if (!userStorage.existsById(friendId)) {
+                    log.warn("Пользователь-друг с id = {} не найден", friendId);
+                    throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
+                }
+            }
         }
     }
 }
