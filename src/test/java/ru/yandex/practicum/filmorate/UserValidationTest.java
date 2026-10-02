@@ -5,18 +5,21 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserValidationTest {
-
     private UserController userController;
 
     @BeforeEach
     void setUp() {
-        userController = new UserController();
+        InMemoryUserStorage userStorage = new InMemoryUserStorage();
+        UserService userService = new UserService(userStorage);
+        userController = new UserController(userService);
     }
 
     @Test
@@ -30,7 +33,8 @@ class UserValidationTest {
 
         User created = userController.create(user);
         assertNotNull(created);
-        assertEquals(1, created.getId());
+        assertEquals(1L, created.getId());
+        assertEquals("Ivan", created.getName());
     }
 
     @Test
@@ -42,7 +46,7 @@ class UserValidationTest {
                 .build();
 
         User userBlank = User.builder()
-                .email("   ")
+                .email(" ")
                 .login("login")
                 .birthday(LocalDate.of(1990, 1, 1))
                 .build();
@@ -61,7 +65,7 @@ class UserValidationTest {
 
         User userBlank = User.builder()
                 .email("test@yandex.ru")
-                .login("   ")
+                .login(" ")
                 .birthday(LocalDate.of(1990, 1, 1))
                 .build();
 
