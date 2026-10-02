@@ -11,10 +11,10 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Film {
+public class User {
     private int id;
+    private String email;
+    private String login;
     private String name;
-    private String description;
-    private LocalDate releaseDate;
-    private int duration; // продолжительность в минутах
+    private LocalDate birthday;
 }
