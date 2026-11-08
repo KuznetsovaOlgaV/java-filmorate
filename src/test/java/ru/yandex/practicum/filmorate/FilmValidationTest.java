@@ -5,18 +5,23 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FilmValidationTest {
-
     private FilmController filmController;
 
     @BeforeEach
     void setUp() {
-        filmController = new FilmController();
+        InMemoryFilmStorage filmStorage = new InMemoryFilmStorage();
+        InMemoryUserStorage userStorage = new InMemoryUserStorage();
+        FilmService filmService = new FilmService(filmStorage, userStorage);
+        filmController = new FilmController(filmService);
     }
 
     @Test
@@ -30,13 +35,14 @@ class FilmValidationTest {
 
         Film created = filmController.create(film);
         assertNotNull(created);
-        assertEquals(1, created.getId());
+        assertEquals(1L, created.getId());
+        assertEquals("Inception", created.getName());
     }
 
     @Test
     void shouldThrowExceptionWhenNameIsBlank() {
         Film film = Film.builder()
-                .name("  ")
+                .name(" ")
                 .description("Description")
                 .releaseDate(LocalDate.of(2000, 1, 1))
                 .duration(100)

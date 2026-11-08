@@ -6,15 +6,27 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
-    private int id;
+    private Long id;
     private String email;
     private String login;
     private String name;
     private LocalDate birthday;
+
+    @Builder.Default
+    private Set<Long> friends = new HashSet<>();
+
+    public Set<Long> getFriends() {
+        if (friends == null) {
+            friends = new HashSet<>();
+        }
+        return friends;
+    }
 }
