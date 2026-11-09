@@ -3,126 +3,86 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
     private final UserStorage userStorage;
-
-    public Collection<User> findAll() {
-        return userStorage.findAll();
-    }
-
-    public User findById(Long id) {
-        return userStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + id + " не найден"));
-    }
 
     public User create(User user) {
         validateUser(user);
-        validateFriends(user);
-        User created = userStorage.create(user);
-        log.info("Пользователь успешно создан: {}", created);
-        return created;
+        validateName(user);
+        return userStorage.create(user);
     }
 
-
     public User update(User user) {
-        User oldUser = findById(user.getId());
+        getById(user.getId());
         validateUser(user);
-        // если не передан — сохраняем старых друзей иначе если передан — проверяем существование всех пользователей в списке friends
-        if (user.getFriends() == null || user.getFriends().isEmpty()) {
-            user.setFriends(oldUser.getFriends());
-        } else {
-            validateFriends(user);
-        }
+        validateName(user);
+        return userStorage.update(user);
+    }
 
-        User updated = userStorage.update(user);
-        log.info("Пользователь с id {} успешно обновлен", updated.getId());
-        return updated;
+    public List<User> getAll() {
+        return userStorage.getAll();
+    }
+
+    public User getById(Long id) {
+        return userStorage.getById(id)
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id = %d не найден", id)));
+    }
+
+    public void delete(Long id) {
+        getById(id);
+        userStorage.delete(id);
     }
 
     public void addFriend(Long userId, Long friendId) {
-        if (Objects.equals(userId, friendId)) {
-            throw new ValidationException("Пользователь не может добавить сам себя в друзья");
-        }
-        User user = findById(userId);
-        User friend = findById(friendId);
-
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
-        log.info("Пользователи id {} и id {} теперь друзья", userId, friendId);
+        getById(userId);
+        getById(friendId);
+        userStorage.addFriend(userId, friendId);
     }
 
     public void removeFriend(Long userId, Long friendId) {
-        User user = findById(userId);
-        User friend = findById(friendId);
-
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
-        log.info("Пользователи id {} и id {} больше не друзья", userId, friendId);
+        getById(userId);
+        getById(friendId);
+        userStorage.removeFriend(userId, friendId);
     }
 
     public List<User> getFriends(Long userId) {
-        User user = findById(userId);
-        return user.getFriends().stream()
-                .map(this::findById)
-                .collect(Collectors.toList());
+        getById(userId);
+        return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(Long userId, Long otherId) {
-        User user = findById(userId);
-        User otherUser = findById(otherId);
-
-        Set<Long> commonFriendIds = new HashSet<>(user.getFriends());
-        commonFriendIds.retainAll(otherUser.getFriends());
-
-        return commonFriendIds.stream()
-                .map(this::findById)
-                .collect(Collectors.toList());
+        getById(userId);
+        getById(otherId);
+        return userStorage.getCommonFriends(userId, otherId);
     }
 
-    public void validateUser(User user) {
-        if (!StringUtils.hasText(user.getEmail()) || !user.getEmail().contains("@")) {
-            log.warn("Валидация не пройдена: некорректный email");
-            throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
+    private void validateUser(User user) {
+        if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
+            throw new ValidationException("Электронная почта не может быть пустой и должна содержать @");
         }
-        if (!StringUtils.hasText(user.getLogin()) || user.getLogin().contains(" ")) {
-            log.warn("Валидация не пройдена: некорректный логин");
-            throw new ValidationException("Логин не может быть пустым и содержать пробелы");
+        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
+            throw new ValidationException("Логин не может быть пустым и не должен содержать пробелы");
         }
-        if (user.getBirthday() == null || user.getBirthday().isAfter(LocalDate.now())) {
-            log.warn("Валидация не пройдена: дата рождения указана в будущем");
+        if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("Дата рождения не может быть в будущем");
         }
-        if (!StringUtils.hasText(user.getName())) {
-            log.info("Имя пользователя не указано, используется логин: {}", user.getLogin());
-            user.setName(user.getLogin());
-        }
     }
 
-    // валидация существования пользователей в списке друзей
-    private void validateFriends(User user) {
-        if (user.getFriends() != null) {
-            for (Long friendId : user.getFriends()) {
-                if (Objects.equals(user.getId(), friendId)) {
-                    throw new ValidationException("Пользователь не может добавить сам себя в друзья");
-                }
-                if (!userStorage.existsById(friendId)) {
-                    log.warn("Пользователь-друг с id = {} не найден", friendId);
-                    throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
-                }
-            }
+    private void validateName(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
     }
 }
