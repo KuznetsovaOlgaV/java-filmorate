@@ -36,7 +36,7 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        getById(film.getId());
+        checkFilmExists(film.getId());
         validateFilm(film);
         validateMpaAndGenres(film);
         Film updated = filmStorage.update(film);
@@ -60,26 +60,34 @@ public class FilmService {
     }
 
     public void delete(Long id) {
-        getById(id);
+        checkFilmExists(id);
         filmStorage.delete(id);
     }
 
     public void addLike(Long filmId, Long userId) {
-        getById(filmId);
+        checkFilmExists(filmId);
         checkUserExists(userId);
         filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(Long filmId, Long userId) {
-        getById(filmId);
+        checkFilmExists(filmId);
         checkUserExists(userId);
         filmStorage.removeLike(filmId, userId);
     }
 
     public List<Film> getPopular(int count) {
+        if (count <= 0) {
+            throw new ValidationException("Параметр count должен быть положительным числом");
+        }
         List<Film> films = filmStorage.getPopular(count);
         genreStorage.loadGenresForFilms(films);
         return films;
+    }
+
+    private void checkFilmExists(Long filmId) {
+        filmStorage.getById(filmId)
+                .orElseThrow(() -> new NotFoundException(String.format("Фильм с id = %d не найден", filmId)));
     }
 
     private void checkUserExists(Long userId) {
@@ -107,10 +115,15 @@ public class FilmService {
             mpaStorage.getById(film.getMpa().getId())
                     .orElseThrow(() -> new NotFoundException(String.format("MPA с id = %d не найден", film.getMpa().getId())));
         }
+
         if (film.getGenres() != null) {
-            film.getGenres().forEach(genre -> genreStorage.getById(genre.getId())
-                    .orElseThrow(() -> new NotFoundException(String.format("Жанр с id = %d не найден", genre.getId())))
-            );
+            film.getGenres().forEach(genre -> {
+                if (genre == null || genre.getId() == null) {
+                    throw new ValidationException("Жанр не может быть null или без ID");
+                }
+                genreStorage.getById(genre.getId())
+                        .orElseThrow(() -> new NotFoundException(String.format("Жанр с id = %d не найден", genre.getId())));
+            });
         }
     }
 }
