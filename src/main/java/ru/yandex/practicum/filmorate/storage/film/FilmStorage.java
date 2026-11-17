@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,13 +12,13 @@ public interface FilmStorage {
 
     void delete(Long id);
 
-    Collection<Film> findAll();
+    List<Film> getAll();
 
-    Optional<Film> findById(Long id);
+    Optional<Film> getById(Long id);
 
-    // проверка существования фильма по id
-    boolean existsById(Long id);
+    void addLike(Long filmId, Long userId);
 
-    // вынесение выборки и сортировки популярных фильмов в хранилище
+    void removeLike(Long filmId, Long userId);
+
     List<Film> getPopular(int count);
 }

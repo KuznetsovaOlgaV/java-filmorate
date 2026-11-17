@@ -2,25 +2,34 @@ package ru.yandex.practicum.filmorate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
-import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.GenreDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.MpaDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 
-class FilmValidationTest {
+public class FilmValidationTest {
+
     private FilmController filmController;
+    private FilmDbStorage filmStorage;
 
     @BeforeEach
     void setUp() {
-        InMemoryFilmStorage filmStorage = new InMemoryFilmStorage();
-        InMemoryUserStorage userStorage = new InMemoryUserStorage();
-        FilmService filmService = new FilmService(filmStorage, userStorage);
+        filmStorage = Mockito.mock(FilmDbStorage.class);
+        UserDbStorage userStorage = Mockito.mock(UserDbStorage.class);
+        MpaDbStorage mpaStorage = Mockito.mock(MpaDbStorage.class);
+        GenreDbStorage genreStorage = Mockito.mock(GenreDbStorage.class);
+
+        FilmService filmService = new FilmService(filmStorage, userStorage, mpaStorage, genreStorage);
         filmController = new FilmController(filmService);
     }
 
@@ -32,6 +41,16 @@ class FilmValidationTest {
                 .releaseDate(LocalDate.of(2010, 7, 16))
                 .duration(148)
                 .build();
+
+        Film savedFilm = Film.builder()
+                .id(1L)
+                .name("Inception")
+                .description("A mind-bending thriller")
+                .releaseDate(LocalDate.of(2010, 7, 16))
+                .duration(148)
+                .build();
+
+        Mockito.when(filmStorage.create(any(Film.class))).thenReturn(savedFilm);
 
         Film created = filmController.create(film);
         assertNotNull(created);
