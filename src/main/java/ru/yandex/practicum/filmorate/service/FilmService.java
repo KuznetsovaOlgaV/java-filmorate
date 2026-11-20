@@ -85,6 +85,16 @@ public class FilmService {
         return films;
     }
 
+    public List<Film> search(String query, String by) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        String normalizedBy = (by == null) ? "" : by.toLowerCase();
+        List<Film> result = filmStorage.search(query, normalizedBy);
+        log.info("Поиск фильмов: query='{}', by='{}', найдено {} фильмов", query, by, result.size());
+        return result;
+    }
+
     private void checkFilmExists(Long filmId) {
         filmStorage.getById(filmId)
                 .orElseThrow(() -> new NotFoundException(String.format("Фильм с id = %d не найден", filmId)));

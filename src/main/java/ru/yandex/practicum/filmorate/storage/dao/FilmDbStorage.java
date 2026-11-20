@@ -185,4 +185,35 @@ public class FilmDbStorage implements FilmStorage {
             }
         }, filmIds);
     }
+
+    @Override
+    public List<Film> search(String query, String by) {
+        String normalizedQuery = "%" + query.toLowerCase() + "%";
+
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (by == null || by.isBlank() || by.contains("title")) {
+            conditions.add("LOWER(f.film_name) LIKE ?");
+            params.add(normalizedQuery);
+        }
+        if (by == null || by.isBlank() || by.contains("description")) {
+            conditions.add("LOWER(f.description) LIKE ?");
+            params.add(normalizedQuery);
+        }
+
+        if (conditions.isEmpty()) {
+            return List.of(); // некорректный пустой результат
+        }
+
+        String whereClause = String.join(" OR ", conditions);
+        String sql = "SELECT f.*, COUNT(l.user_id) AS likes_count " +
+                "FROM films f " +
+                "LEFT JOIN likes l ON f.film_id = l.film_id " +
+                "WHERE " + whereClause + " " +
+                "GROUP BY f.film_id " +
+                "ORDER BY likes_count DESC";
+
+        return jdbcTemplate.query(sql, filmRowMapper, params.toArray());
+    }
 }

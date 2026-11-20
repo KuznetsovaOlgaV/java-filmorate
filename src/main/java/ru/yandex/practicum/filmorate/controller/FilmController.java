@@ -48,4 +48,11 @@ public class FilmController {
     public List<Film> getPopular(@RequestParam(defaultValue = "10") int count) {
         return filmService.getPopular(count);
     }
+
+    @GetMapping("/search")
+    public List<Film> search(
+            @RequestParam String query,
+            @RequestParam(required = false, defaultValue = "title,description") String by) {
+        return filmService.search(query, by);
+    }
 }
