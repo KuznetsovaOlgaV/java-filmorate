@@ -264,8 +264,8 @@ public class FilmDbStorage implements FilmStorage {
         }
         if (fields.contains("director")) {
             conditions.add(
-                    "EXISTS (SELECT 1 FROM film_directors fd " +
-                            "JOIN directors d ON d.director_id = fd.director_id " +
+                    "EXISTS (SELECT 1 FROM film_directors fd JOIN directors d " +
+                            "ON d.director_id = fd.director_id " +
                             "WHERE fd.film_id = f.film_id AND LOWER(d.name) LIKE ?)"
             );
             params.add(pattern);
@@ -273,10 +273,11 @@ public class FilmDbStorage implements FilmStorage {
 
         if (conditions.isEmpty()) return List.of();
 
-        String sql = "SELECT f.*, " +
-                "(SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count " +
+        String sql = "SELECT f.*, COUNT(l.user_id) AS likes_count " +
                 "FROM films f " +
+                "LEFT JOIN likes l ON l.film_id = f.film_id " +
                 "WHERE " + String.join(" OR ", conditions) + " " +
+                "GROUP BY f.film_id " +
                 "ORDER BY likes_count DESC";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
