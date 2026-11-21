@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.dao.DirectorDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.MpaDbStorage;
@@ -28,8 +29,10 @@ public class FilmValidationTest {
         UserDbStorage userStorage = Mockito.mock(UserDbStorage.class);
         MpaDbStorage mpaStorage = Mockito.mock(MpaDbStorage.class);
         GenreDbStorage genreStorage = Mockito.mock(GenreDbStorage.class);
-
-        FilmService filmService = new FilmService(filmStorage, userStorage, mpaStorage, genreStorage);
+        DirectorDbStorage directorStorage = Mockito.mock(DirectorDbStorage.class);
+        FilmService filmService = new FilmService(
+                filmStorage, userStorage, mpaStorage, genreStorage, directorStorage
+        );
         filmController = new FilmController(filmService);
     }
 
