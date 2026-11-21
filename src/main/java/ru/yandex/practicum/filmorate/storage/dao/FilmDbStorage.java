@@ -15,8 +15,9 @@ import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.mapper.DirectorRowMapper;
 import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
 
-import java.sql.*;
 import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -273,8 +274,11 @@ public class FilmDbStorage implements FilmStorage {
         if (conditions.isEmpty()) return List.of();
 
         String sql = "SELECT f.*, " +
+                "m.name AS mpa_name, " +
+                "m.description AS mpa_description, " +
                 "(SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count " +
                 "FROM films f " +
+                "LEFT JOIN mpa_ratings m ON m.mpa_id = f.mpa_rating_id " +
                 "WHERE " + String.join(" OR ", conditions) + " " +
                 "ORDER BY likes_count DESC";
 
