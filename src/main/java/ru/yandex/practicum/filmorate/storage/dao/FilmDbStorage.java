@@ -12,17 +12,12 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.mapper.DirectorRowMapper;
 import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
 
+import java.sql.*;
 import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,6 +27,7 @@ import java.util.stream.Collectors;
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
     private final FilmRowMapper filmRowMapper;
+    private final DirectorRowMapper directorRowMapper;
 
     private static final String BASE_FILM_SELECT =
             "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
@@ -252,5 +248,60 @@ public class FilmDbStorage implements FilmStorage {
                 film.getDirectors().add(director);
             }
         }, filmIds);
+    }
+
+    @Override
+    public List<Film> search(String query, String by) {
+        String pattern = "%" + query.toLowerCase() + "%";
+        Set<String> fields = parseSearchFields(by);   // {title, director}
+
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (fields.contains("title")) {
+            conditions.add("LOWER(f.film_name) LIKE ?");
+            params.add(pattern);
+        }
+        if (fields.contains("director")) {
+            conditions.add(
+                    "EXISTS (SELECT 1 FROM film_directors fd " +
+                            "JOIN directors d ON d.director_id = fd.director_id " +
+                            "WHERE fd.film_id = f.film_id AND LOWER(d.name) LIKE ?)"
+            );
+            params.add(pattern);
+        }
+
+        if (conditions.isEmpty()) return List.of();
+
+        String sql = "SELECT f.*, " +
+                "(SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count " +
+                "FROM films f " +
+                "WHERE " + String.join(" OR ", conditions) + " " +
+                "ORDER BY likes_count DESC";
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Film film = filmRowMapper.mapRow(rs, rowNum);
+            if (film != null) {
+                film.setDirectors(loadDirectors(film.getId()));
+            }
+            return film;
+        }, params.toArray());
+    }
+
+    private LinkedHashSet<Director> loadDirectors(Long filmId) {
+        String sql = "SELECT d.* FROM directors d " +
+                "JOIN film_directors fd ON fd.director_id = d.director_id " +
+                "WHERE fd.film_id = ? ORDER BY d.director_id";
+        return new LinkedHashSet<>(jdbcTemplate.query(sql, directorRowMapper, filmId));
+    }
+
+    private Set<String> parseSearchFields(String by) {
+        if (by == null || by.isBlank()) return Set.of("title", "director");
+        Set<String> result = new HashSet<>();
+        for (String part : by.toLowerCase().split(",")) {
+            String t = part.trim();
+            if (t.equals("title") || t.equals("director")) result.add(t);
+        }
+        return result;
     }
 }
