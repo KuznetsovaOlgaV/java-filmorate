@@ -256,7 +256,7 @@ class FilmorateApplicationTests {
         filmStorage.addLike(film2.getId(), user1.getId());
         filmStorage.addLike(film2.getId(), user2.getId());
 
-        List<Film> popular = filmStorage.getPopular(2);
+        List<Film> popular = filmStorage.getPopular(2, null, null);
 
         assertThat(popular)
                 .isNotEmpty()
@@ -266,7 +266,7 @@ class FilmorateApplicationTests {
         filmStorage.removeLike(film2.getId(), user1.getId());
         filmStorage.removeLike(film2.getId(), user2.getId());
 
-        List<Film> popularAfterRemove = filmStorage.getPopular(1);
+        List<Film> popularAfterRemove = filmStorage.getPopular(1, null, null);
         assertThat(popularAfterRemove.get(0).getId()).isEqualTo(film1.getId());
     }
 

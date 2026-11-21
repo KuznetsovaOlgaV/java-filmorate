@@ -6,11 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.dao.DirectorDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.GenreDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.MpaDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -66,12 +62,22 @@ public class FilmService {
         filmStorage.removeLike(filmId, userId);
     }
 
-    public List<Film> getPopular(int count) {
+    public List<Film> getPopular(Integer count, Integer genreId, Integer year) {
+        int limit = (count == null || count <= 0) ? 10 : count;
+
+        List<Film> popular = filmStorage.getPopular(limit, genreId, year);
+        log.info("Популярные фильмы: count={}, genreId={}, year={}, найдено {}",
+                limit, genreId, year, popular.size());
+
+        return popular;
+    }
+
+    /*public List<Film> getPopular(int count) {
         if (count <= 0) {
             throw new ValidationException("Параметр count должен быть положительным числом");
         }
         return filmStorage.getPopular(count);
-    }
+    }*/
 
     public List<Film> getDirectorFilms(Long directorId, String sortBy) {
         directorStorage.getById(directorId)
