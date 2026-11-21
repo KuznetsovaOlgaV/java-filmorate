@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.mapper.DirectorRowMapper;
 import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
+import ru.yandex.practicum.filmorate.storage.mapper.GenreRowMapper;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -29,6 +30,7 @@ public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
     private final FilmRowMapper filmRowMapper;
     private final DirectorRowMapper directorRowMapper;
+    private final GenreRowMapper genreRowMapper;
 
     private static final String BASE_FILM_SELECT =
             "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
@@ -285,6 +287,7 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Film film = filmRowMapper.mapRow(rs, rowNum);
             if (film != null) {
+                film.setGenres(loadGenres(film.getId()));
                 film.setDirectors(loadDirectors(film.getId()));
             }
             return film;
@@ -296,6 +299,13 @@ public class FilmDbStorage implements FilmStorage {
                 "JOIN film_directors fd ON fd.director_id = d.director_id " +
                 "WHERE fd.film_id = ? ORDER BY d.director_id";
         return new LinkedHashSet<>(jdbcTemplate.query(sql, directorRowMapper, filmId));
+    }
+
+    private LinkedHashSet<Genre> loadGenres(Long filmId) {
+        String sql = "SELECT g.* FROM genres g " +
+                "JOIN film_genres fg ON fg.genre_id = g.genre_id " +
+                "WHERE fg.film_id = ? ORDER BY g.genre_id";
+        return new LinkedHashSet<>(jdbcTemplate.query(sql, genreRowMapper, filmId));
     }
 
     private Set<String> parseSearchFields(String by) {
