@@ -259,7 +259,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Object> params = new ArrayList<>();
 
         if (fields.contains("title")) {
-            conditions.add("LOWER(f.film_name) LIKE ?");
+            conditions.add("LOWER(f.name) LIKE ?");
             params.add(pattern);
         }
         if (fields.contains("director")) {
