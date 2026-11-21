@@ -15,10 +15,7 @@ import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
-import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
-import ru.yandex.practicum.filmorate.storage.mapper.GenreRowMapper;
-import ru.yandex.practicum.filmorate.storage.mapper.MpaRowMapper;
-import ru.yandex.practicum.filmorate.storage.mapper.UserRowMapper;
+import ru.yandex.practicum.filmorate.storage.mapper.*;
 
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
@@ -39,7 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         UserRowMapper.class,
         FilmRowMapper.class,
         GenreRowMapper.class,
-        MpaRowMapper.class
+        MpaRowMapper.class,
+        DirectorRowMapper.class
 })
 class FilmorateApplicationTests {
 

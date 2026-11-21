@@ -61,6 +61,11 @@ public class InMemoryFilmStorage implements FilmStorage {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<Film> search(String query, String by) {
+        throw new UnsupportedOperationException("search operation is not supported in InMemoryFilmStorage");
+    }
+
     public void delete(Long id) {
         films.remove(id);
     }
