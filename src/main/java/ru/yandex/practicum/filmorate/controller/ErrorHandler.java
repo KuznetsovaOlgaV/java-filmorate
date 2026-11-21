@@ -17,7 +17,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler(Exception.class)
+    /*@ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleAll(Exception e) {
         Throwable root = e;
@@ -28,7 +28,7 @@ public class ErrorHandler {
         return Map.of("error", root.getMessage() != null
                 ? root.getMessage()
                 : e.getClass().getSimpleName());
-    }
+    }*/
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)

@@ -22,8 +22,9 @@ public class FilmRowMapper implements RowMapper<Film> {
                 .genres(new LinkedHashSet<>())
                 .build();
 
+        int mpaNameIndex = rs.findColumn("mpa_name");
         int mpaId = rs.getInt("mpa_rating_id");
-        if (!rs.wasNull()) {
+        if (!rs.wasNull() && mpaNameIndex != -1) {
             Mpa mpa = Mpa.builder()
                     .id(mpaId)
                     .name(rs.getString("mpa_name"))

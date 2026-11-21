@@ -276,7 +276,7 @@ public class FilmDbStorage implements FilmStorage {
                 "(SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count " +
                 "FROM films f " +
                 "WHERE " + String.join(" OR ", conditions) + " " +
-                "ORDER BY likes_count DESC";   // ← без GROUP BY
+                "ORDER BY likes_count DESC";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Film film = filmRowMapper.mapRow(rs, rowNum);
