@@ -9,10 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
-import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.GenreDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.MpaDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.*;
 
 import java.util.List;
 
@@ -30,59 +27,68 @@ class FilmServiceSearchTest {
     private GenreDbStorage genreStorage;
     @Mock
     private MpaDbStorage mpaStorage;
+    @Mock
+    private DirectorDbStorage directorStorage;
 
     @InjectMocks
     private FilmService filmService;
 
     @Test
-    void searchWithValidQueryDelegatesToStorage() {
-        Film matrix = Film.builder().id(1L).name("Матрица").build();
-        when(filmStorage.search("матриц", "title")).thenReturn(List.of(matrix));
+    void searchByTitleDelegatesToStorage() {
+        when(filmStorage.search("крад", "title")).thenReturn(List.of());
 
-        List<Film> result = filmService.search("матриц", "title");
+        filmService.search("крад", "title");
 
-        assertThat(result).containsExactly(matrix);
-        verify(filmStorage).search("матриц", "title");
+        verify(filmStorage).search("крад", "title");
     }
 
     @Test
-    void searchWithNullByNormalizesToEmpty() {
-        when(filmStorage.search("космос", "")).thenReturn(List.of());
+    void searchByDirectorDelegatesToStorage() {
+        when(filmStorage.search("ли", "director")).thenReturn(List.of());
 
-        filmService.search("космос", null);
+        filmService.search("ли", "director");
 
-        verify(filmStorage).search("космос", "");
+        verify(filmStorage).search("ли", "director");
     }
 
     @Test
-    void searchLowercasesBy() {
-        when(filmStorage.search("к", "title,description")).thenReturn(List.of());
+    void searchByBothDelegatesToStorage() {
+        when(filmStorage.search("крад", "title,director")).thenReturn(List.of());
 
-        filmService.search("к", "TITLE,DESCRIPTION");
+        filmService.search("крад", "title,director");
 
-        verify(filmStorage).search("к", "title,description");
+        verify(filmStorage).search("крад", "title,director");
     }
 
     @Test
-    void searchWithBlankQueryReturnsEmptyListWithoutStorageCall() {
-        List<Film> result = filmService.search("   ", "title");
-
-        assertThat(result).isEmpty();
-        verifyNoInteractions(filmStorage);
-    }
-
-    @Test
-    void searchWithNullQueryReturnsEmptyListWithoutStorageCall() {
-        List<Film> result = filmService.search(null, "title");
-
-        assertThat(result).isEmpty();
+    void searchWithNullQueryReturnsEmptyWithoutStorageCall() {
+        assertThat(filmService.search(null, "title")).isEmpty();
         verifyNoInteractions(filmStorage);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "   ", "\t", "\n"})
-    void searchWithBlankQueryVariantsReturnsEmpty(String blankQuery) {
-        assertThat(filmService.search(blankQuery, "title")).isEmpty();
+    void searchWithBlankQueryReturnsEmptyWithoutStorageCall(String blank) {
+        assertThat(filmService.search(blank, "title")).isEmpty();
         verifyNoInteractions(filmStorage);
+    }
+
+    @Test
+    void searchTrimsQueryBeforePassingToStorage() {
+        when(filmStorage.search("крад", "title")).thenReturn(List.of());
+
+        filmService.search("  крад  ", "title");
+
+        verify(filmStorage).search("крад", "title");
+    }
+
+    @Test
+    void searchReturnsStorageResult() {
+        Film film = Film.builder().id(1L).name("Крадущийся тигр").build();
+        when(filmStorage.search("крад", "title,director")).thenReturn(List.of(film));
+
+        List<Film> result = filmService.search("крад", "title,director");
+
+        assertThat(result).containsExactly(film);
     }
 }
