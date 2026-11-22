@@ -10,18 +10,25 @@ Template repository for Filmorate project.
 
 ## filmorate_db.png
 
-##  
-
+```mermaid
 erDiagram
-USERS ||--o{ LIKES : "ставит"
-USERS ||--o{ FRIENDS : "инициатор"
-USERS ||--o{ FRIENDS : "друг"
-FRIENDSHIP_STATUS ||--o{ FRIENDS : "определяет"
+    USERS ||--o{ LIKES : "ставит"
+    USERS ||--o{ FRIENDS : "инициатор"
+    USERS ||--o{ FRIENDS : "друг"
+    FRIENDSHIP_STATUS ||--o{ FRIENDS : "определяет"
 
     FILMS ||--o{ LIKES : "получает"
     FILMS ||--o{ FILM_GENRES : "содержит"
     GENRES ||--o{ FILM_GENRES : "относится к"
     MPA_RATINGS ||--o{ FILMS : "ограничивает"
+    
+    USERS ||--o{ REVIEW_MARKS : user_id
+    REVIEWS ||--o{ REVIEW_MARKS : review_id
+    FILMS ||--o{ REVIEWS : film_id
+    USERS ||--o{ REVIEWS : user_id
+    
+    FILMS ||--o{ FILM_DIRECTORS : film_id
+    DIRECTORS ||--o{ FILM_DIRECTORS : director_id
 
     USERS {
         bigint user_id PK
@@ -71,6 +78,32 @@ FRIENDSHIP_STATUS ||--o{ FRIENDS : "определяет"
         bigint film_id PK, FK
         bigint user_id PK, FK
     }
+    
+    REVIEWS {
+        bigint id PK
+        varchar content
+        bool is_positive
+        bigint user_id FK
+        bigint film_id FK
+        int useful
+    }
+
+    REVIEW_MARKS {
+        bigint review_id FK
+        bigint user_id FK
+        bool is_like
+    }
+    
+    DIRECTORS {
+        bigint director_id PK
+        varchar name
+    }
+
+    FILM_DIRECTORS {
+        bigint film_id FK
+        bigint director_id FK
+    }
+```
 
 Примеры SQL-запросов для основных операций
 Фильмы
