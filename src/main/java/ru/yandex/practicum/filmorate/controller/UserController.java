@@ -54,8 +54,6 @@ public class UserController {
     public List<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
         return userService.getCommonFriends(id, otherId);
     }
-<<<<<<< Updated upstream
-=======
 
     @DeleteMapping("/{userId}")
     public void deleteUser(@PathVariable Long userId) {
@@ -66,5 +64,5 @@ public class UserController {
     public List<Event> getEventsByUserId(@PathVariable Long id) {
         return userService.getEventsByUserId(id);
     }
->>>>>>> Stashed changes
+
 }
