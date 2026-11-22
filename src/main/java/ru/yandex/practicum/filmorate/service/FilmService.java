@@ -55,14 +55,14 @@ public class FilmService {
     public void addLike(Long filmId, Long userId) {
         checkFilmExists(filmId);
         checkUserExists(userId);
-        eventService.putFilmEvent(userId,"LIKE","ADD", filmId);
+        eventService.putFilmEvent(userId, "LIKE", "ADD", filmId);
         filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(Long filmId, Long userId) {
         checkFilmExists(filmId);
         checkUserExists(userId);
-        eventService.putFilmEvent(userId,"LIKE","REMOVE", filmId);
+        eventService.putFilmEvent(userId, "LIKE", "REMOVE", filmId);
         filmStorage.removeLike(filmId, userId);
     }
 

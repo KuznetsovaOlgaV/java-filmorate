@@ -21,11 +21,12 @@ public class EventRowMapper implements RowMapper<Event> {
                 .entityId(getEntityId(rs))
                 .build();
     }
-    private Long getEntityId (ResultSet rs) throws SQLException {
+
+    private Long getEntityId(ResultSet rs) throws SQLException {
         var id = rs.getLong("entity_user_id");
-        if (id > 0)  return id;
+        if (id > 0) return id;
         id = rs.getLong("entity_film_id");
-        if (id > 0)  return id;
+        if (id > 0) return id;
         return rs.getLong("entity_review_id");
     }
 }

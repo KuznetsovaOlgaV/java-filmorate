@@ -15,6 +15,7 @@ public class EventService {
     public List<Event> getEventsByUserId(Long id) {
         return eventStorage.getEventsByUserId(id);
     }
+
     public void putUserEvent(Long userId, String eventType, String operation, Long entityId) {
         eventStorage.putUserEvent(userId, eventType, operation, entityId);
     }

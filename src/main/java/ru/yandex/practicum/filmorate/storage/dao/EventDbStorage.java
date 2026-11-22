@@ -8,7 +8,6 @@ import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.storage.EventStorage;
 import ru.yandex.practicum.filmorate.storage.mapper.EventRowMapper;
 
-
 import java.util.List;
 
 @Repository

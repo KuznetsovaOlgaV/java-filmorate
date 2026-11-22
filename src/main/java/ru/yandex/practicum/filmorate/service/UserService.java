@@ -53,14 +53,14 @@ public class UserService {
     public void addFriend(Long userId, Long friendId) {
         getById(userId);
         getById(friendId);
-        eventService.putUserEvent(userId,"FRIEND","ADD",friendId);
+        eventService.putUserEvent(userId, "FRIEND", "ADD", friendId);
         userStorage.addFriend(userId, friendId);
     }
 
     public void removeFriend(Long userId, Long friendId) {
         getById(userId);
         getById(friendId);
-        eventService.putUserEvent(userId,"FRIEND","REMOVE",friendId);
+        eventService.putUserEvent(userId, "FRIEND", "REMOVE", friendId);
         userStorage.removeFriend(userId, friendId);
     }
 
@@ -74,6 +74,7 @@ public class UserService {
         getById(otherId);
         return userStorage.getCommonFriends(userId, otherId);
     }
+
     public List<Event> getEventsByUserId(Long id) {
         getById(id);
         return eventService.getEventsByUserId(id);
