@@ -130,23 +130,6 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update(sql, filmId, userId);
     }
 
-    /*public List<Film> getPopular(int count) {
-        String sql = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
-                "f.mpa_rating_id, m.name AS mpa_name, m.description AS mpa_description, " +
-                "COUNT(l.user_id) AS likes_count " +
-                "FROM films f " +
-                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.mpa_id " +
-                "LEFT JOIN likes l ON f.film_id = l.film_id " +
-                "GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, " +
-                "f.mpa_rating_id, m.name, m.description " +
-                "ORDER BY likes_count DESC, f.film_id ASC " +
-                "LIMIT ?";
-        List<Film> films = jdbcTemplate.query(sql, filmRowMapper, count);
-        loadGenresForFilms(films);
-        loadDirectorsForFilms(films);
-        return films;
-    }*/
-
     @Override
     public List<Film> getPopular(Integer count, Integer genreId, Integer year) {
         StringBuilder sql = new StringBuilder(
