@@ -99,6 +99,14 @@ public class FilmService {
         return result;
     }
 
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        checkUserExists(userId);
+        checkUserExists(friendId);
+        List<Film> films = filmStorage.getCommon(userId, friendId);
+        genreStorage.loadGenresForFilms(films);
+        return films;
+    }
+
     private void checkFilmExists(Long filmId) {
         filmStorage.getById(filmId)
                 .orElseThrow(() -> new NotFoundException(String.format("Фильм с id = %d не найден", filmId)));
