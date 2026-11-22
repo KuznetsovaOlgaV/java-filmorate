@@ -52,7 +52,7 @@ public class ReviewService {
             throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
         }
         eventService.putReviewEvent(reviewStorage.getById(reviewId).get().getUserId(),
-                "REVIEW", "DELETE", reviewStorage.getById(reviewId).get().getReviewId());
+                "REVIEW", "REMOVE", reviewStorage.getById(reviewId).get().getReviewId());
         reviewStorage.delete(reviewId);
         log.info("Удалён отзыв: id={}", reviewId);
     }

@@ -136,5 +136,4 @@ create table if not exists events (
     constraint fk_entity_review
                     foreign key (entity_review_id)
                     references reviews(review_id)
-                    on delete cascade
 );
