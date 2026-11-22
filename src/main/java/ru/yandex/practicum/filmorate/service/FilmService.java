@@ -6,11 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.dao.DirectorDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.GenreDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.MpaDbStorage;
-import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.dao.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -66,11 +62,14 @@ public class FilmService {
         filmStorage.removeLike(filmId, userId);
     }
 
-    public List<Film> getPopular(int count) {
-        if (count <= 0) {
-            throw new ValidationException("Параметр count должен быть положительным числом");
-        }
-        return filmStorage.getPopular(count);
+    public List<Film> getPopular(Integer count, Integer genreId, Integer year) {
+        int limit = (count == null || count <= 0) ? 10 : count;
+
+        List<Film> popular = filmStorage.getPopular(limit, genreId, year);
+        log.info("Популярные фильмы: count={}, genreId={}, year={}, найдено {}",
+                limit, genreId, year, popular.size());
+
+        return popular;
     }
 
     public List<Film> getDirectorFilms(Long directorId, String sortBy) {
@@ -80,6 +79,25 @@ public class FilmService {
             throw new ValidationException("Некорректный параметр сортировки sortBy: " + sortBy);
         }
         return filmStorage.getDirectorFilms(directorId, sortBy);
+    }
+
+    public List<Film> search(String query, String by) {
+        if (query == null || query.isBlank()) return List.of();
+        String normalizedQuery = query.trim();
+        String normalizedBy = (by == null || by.isBlank())
+                ? "title,director"
+                : by.toLowerCase();
+        List<Film> result = filmStorage.search(normalizedQuery, normalizedBy);
+        log.info("Поиск фильмов: query='{}', by='{}', найдено {} фильмов", query, by, result.size());
+        return result;
+    }
+
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        checkUserExists(userId);
+        checkUserExists(friendId);
+        List<Film> films = filmStorage.getCommon(userId, friendId);
+        genreStorage.loadGenresForFilms(films);
+        return films;
     }
 
     private void checkFilmExists(Long filmId) {

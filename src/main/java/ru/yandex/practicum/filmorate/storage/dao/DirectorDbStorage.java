@@ -3,12 +3,12 @@ package ru.yandex.practicum.filmorate.storage.dao;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
+import ru.yandex.practicum.filmorate.storage.mapper.DirectorRowMapper;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -21,18 +21,16 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class DirectorDbStorage {
     private final JdbcTemplate jdbcTemplate;
-
-    private static final RowMapper<Director> DIRECTOR_ROW_MAPPER = (rs, rowNum) ->
-            new Director(rs.getLong("director_id"), rs.getString("name"));
+    private final DirectorRowMapper directorRowMapper;
 
     public List<Director> getAll() {
         String sql = "SELECT director_id, name FROM directors ORDER BY director_id";
-        return jdbcTemplate.query(sql, DIRECTOR_ROW_MAPPER);
+        return jdbcTemplate.query(sql, directorRowMapper);
     }
 
     public Optional<Director> getById(Long id) {
         String sql = "SELECT director_id, name FROM directors WHERE director_id = ?";
-        List<Director> directors = jdbcTemplate.query(sql, DIRECTOR_ROW_MAPPER, id);
+        List<Director> directors = jdbcTemplate.query(sql, directorRowMapper, id);
         return directors.isEmpty() ? Optional.empty() : Optional.of(directors.get(0));
     }
 

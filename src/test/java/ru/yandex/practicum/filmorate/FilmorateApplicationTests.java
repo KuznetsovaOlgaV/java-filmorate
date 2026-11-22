@@ -15,10 +15,7 @@ import ru.yandex.practicum.filmorate.storage.dao.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.dao.UserDbStorage;
-import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
-import ru.yandex.practicum.filmorate.storage.mapper.GenreRowMapper;
-import ru.yandex.practicum.filmorate.storage.mapper.MpaRowMapper;
-import ru.yandex.practicum.filmorate.storage.mapper.UserRowMapper;
+import ru.yandex.practicum.filmorate.storage.mapper.*;
 
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
@@ -39,7 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         UserRowMapper.class,
         FilmRowMapper.class,
         GenreRowMapper.class,
-        MpaRowMapper.class
+        MpaRowMapper.class,
+        DirectorRowMapper.class
 })
 class FilmorateApplicationTests {
 
@@ -258,7 +256,7 @@ class FilmorateApplicationTests {
         filmStorage.addLike(film2.getId(), user1.getId());
         filmStorage.addLike(film2.getId(), user2.getId());
 
-        List<Film> popular = filmStorage.getPopular(2);
+        List<Film> popular = filmStorage.getPopular(2, null, null);
 
         assertThat(popular)
                 .isNotEmpty()
@@ -268,7 +266,7 @@ class FilmorateApplicationTests {
         filmStorage.removeLike(film2.getId(), user1.getId());
         filmStorage.removeLike(film2.getId(), user2.getId());
 
-        List<Film> popularAfterRemove = filmStorage.getPopular(1);
+        List<Film> popularAfterRemove = filmStorage.getPopular(1, null, null);
         assertThat(popularAfterRemove.get(0).getId()).isEqualTo(film1.getId());
     }
 

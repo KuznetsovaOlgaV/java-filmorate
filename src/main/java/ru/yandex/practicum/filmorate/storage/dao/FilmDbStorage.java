@@ -12,17 +12,14 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.mapper.DirectorRowMapper;
 import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
+import ru.yandex.practicum.filmorate.storage.mapper.GenreRowMapper;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,6 +29,8 @@ import java.util.stream.Collectors;
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
     private final FilmRowMapper filmRowMapper;
+    private final DirectorRowMapper directorRowMapper;
+    private final GenreRowMapper genreRowMapper;
 
     private static final String BASE_FILM_SELECT =
             "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
@@ -131,21 +130,56 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update(sql, filmId, userId);
     }
 
-    public List<Film> getPopular(int count) {
-        String sql = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
-                "f.mpa_rating_id, m.name AS mpa_name, m.description AS mpa_description, " +
-                "COUNT(l.user_id) AS likes_count " +
-                "FROM films f " +
-                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.mpa_id " +
-                "LEFT JOIN likes l ON f.film_id = l.film_id " +
-                "GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, " +
-                "f.mpa_rating_id, m.name, m.description " +
-                "ORDER BY likes_count DESC, f.film_id ASC " +
-                "LIMIT ?";
-        List<Film> films = jdbcTemplate.query(sql, filmRowMapper, count);
-        loadGenresForFilms(films);
-        loadDirectorsForFilms(films);
-        return films;
+    @Override
+    public List<Film> getPopular(Integer count, Integer genreId, Integer year) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT f.*, " +
+                        "m.name AS mpa_name, " +
+                        "m.description AS mpa_description, " +
+                        "(SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count " +
+                        "FROM films f " +
+                        "LEFT JOIN mpa_ratings m ON m.mpa_id = f.mpa_rating_id "
+        );
+
+        List<Object> params = new ArrayList<>();
+        List<String> conditions = new ArrayList<>();
+
+        if (genreId != null) {
+            conditions.add(
+                    "EXISTS (SELECT 1 FROM film_genres fg " +
+                            "WHERE fg.film_id = f.film_id AND fg.genre_id = ?)"
+            );
+            params.add(genreId);
+        }
+
+        if (year != null) {
+            conditions.add("EXTRACT(YEAR FROM f.release_date) = ?");
+            params.add(year);
+        }
+
+        if (!conditions.isEmpty()) {
+            sql.append("WHERE ").append(String.join(" AND ", conditions)).append(" ");
+        }
+
+        sql.append("ORDER BY likes_count DESC");
+
+        return jdbcTemplate.query(
+                sql.toString(),
+                ps -> {
+                    ps.setMaxRows(count);
+                    for (int i = 0; i < params.size(); i++) {
+                        ps.setObject(i + 1, params.get(i));
+                    }
+                },
+                (rs, rowNum) -> {
+                    Film film = filmRowMapper.mapRow(rs, rowNum);
+                    if (film != null) {
+                        film.setGenres(loadGenres(film.getId()));
+                        film.setDirectors(loadDirectors(film.getId()));
+                    }
+                    return film;
+                }
+        );
     }
 
     public List<Film> getDirectorFilms(Long directorId, String sortBy) {
@@ -171,6 +205,21 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, filmRowMapper, directorId);
         loadGenresForFilms(films);
         loadDirectorsForFilms(films);
+        return films;
+    }
+
+    public List<Film> getCommon(Long userId, Long friendId) {
+        String sql = "SELECT l.film_id, f.name, f.description, f.release_date, f.duration, COUNT(*) as likes_count, " +
+                "f.mpa_rating_id, m.name AS mpa_name, m.description AS mpa_description, " +
+                "FROM likes l " +
+                "JOIN films f on  l.film_id = f.film_id " +
+                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.mpa_id " +
+                "WHERE l.film_id IN (SELECT likes.film_id FROM likes WHERE user_id = ? INTERSECT " +
+                "SELECT likes.film_id FROM likes WHERE user_id = ? ) " +
+                "GROUP BY l.film_id " +
+                "ORDER BY likes_count DESC";
+        List<Film> films = jdbcTemplate.query(sql, filmRowMapper, userId, friendId);
+        loadGenresForFilms(films);
         return films;
     }
 
@@ -252,5 +301,70 @@ public class FilmDbStorage implements FilmStorage {
                 film.getDirectors().add(director);
             }
         }, filmIds);
+    }
+
+    @Override
+    public List<Film> search(String query, String by) {
+        String pattern = "%" + query.toLowerCase() + "%";
+        Set<String> fields = parseSearchFields(by);   // {title, director}
+
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (fields.contains("title")) {
+            conditions.add("LOWER(f.name) LIKE ?");
+            params.add(pattern);
+        }
+        if (fields.contains("director")) {
+            conditions.add(
+                    "EXISTS (SELECT 1 FROM film_directors fd " +
+                            "JOIN directors d ON d.director_id = fd.director_id " +
+                            "WHERE fd.film_id = f.film_id AND LOWER(d.name) LIKE ?)"
+            );
+            params.add(pattern);
+        }
+        if (conditions.isEmpty()) return List.of();
+
+        String sql = "SELECT f.*, " +
+                "m.name AS mpa_name, " +
+                "m.description AS mpa_description, " +
+                "(SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count " +
+                "FROM films f " +
+                "LEFT JOIN mpa_ratings m ON m.mpa_id = f.mpa_rating_id " +
+                "WHERE " + String.join(" OR ", conditions) + " " +
+                "ORDER BY likes_count DESC";
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Film film = filmRowMapper.mapRow(rs, rowNum);
+            if (film != null) {
+                film.setGenres(loadGenres(film.getId()));
+                film.setDirectors(loadDirectors(film.getId()));
+            }
+            return film;
+        }, params.toArray());
+    }
+
+    private LinkedHashSet<Director> loadDirectors(Long filmId) {
+        String sql = "SELECT d.* FROM directors d " +
+                "JOIN film_directors fd ON fd.director_id = d.director_id " +
+                "WHERE fd.film_id = ? ORDER BY d.director_id";
+        return new LinkedHashSet<>(jdbcTemplate.query(sql, directorRowMapper, filmId));
+    }
+
+    private LinkedHashSet<Genre> loadGenres(Long filmId) {
+        String sql = "SELECT g.* FROM genres g " +
+                "JOIN film_genres fg ON fg.genre_id = g.genre_id " +
+                "WHERE fg.film_id = ? ORDER BY g.genre_id";
+        return new LinkedHashSet<>(jdbcTemplate.query(sql, genreRowMapper, filmId));
+    }
+
+    private Set<String> parseSearchFields(String by) {
+        if (by == null || by.isBlank()) return Set.of("title", "director");
+        Set<String> result = new HashSet<>();
+        for (String part : by.toLowerCase().split(",")) {
+            String t = part.trim();
+            if (t.equals("title") || t.equals("director")) result.add(t);
+        }
+        return result;
     }
 }

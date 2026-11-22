@@ -26,6 +26,9 @@ erDiagram
     REVIEWS ||--o{ REVIEW_MARKS : review_id
     FILMS ||--o{ REVIEWS : film_id
     USERS ||--o{ REVIEWS : user_id
+    
+    FILMS ||--o{ FILM_DIRECTORS : film_id
+    DIRECTORS ||--o{ FILM_DIRECTORS : director_id
 
     USERS {
         bigint user_id PK
@@ -89,6 +92,16 @@ erDiagram
         bigint review_id FK
         bigint user_id FK
         bool is_like
+    }
+    
+    DIRECTORS {
+        bigint director_id PK
+        varchar name
+    }
+
+    FILM_DIRECTORS {
+        bigint film_id FK
+        bigint director_id FK
     }
 ```
 

@@ -51,7 +51,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getPopular(int count) {
+    public List<Film> getPopular(Integer count, Integer genreId, Integer year) {
         return films.values().stream()
                 .sorted((f1, f2) -> Integer.compare(
                         f2.getLikes() != null ? f2.getLikes().size() : 0,
@@ -59,6 +59,11 @@ public class InMemoryFilmStorage implements FilmStorage {
                 ))
                 .limit(count)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Film> search(String query, String by) {
+        throw new UnsupportedOperationException("search operation is not supported in InMemoryFilmStorage");
     }
 
     public void delete(Long id) {
