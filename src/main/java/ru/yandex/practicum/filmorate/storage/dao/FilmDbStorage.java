@@ -226,11 +226,11 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     public List<Film> getCommon(Long userId, Long friendId) {
-        String sql = "SELECT l.film_id, f.name, f.description, f.release_date, f.duration, COUNT(*) as likes_count " +
+        String sql = "SELECT l.film_id, f.name, f.description, f.release_date, f.duration, COUNT(*) as likes_count, " +
                 "f.mpa_rating_id, m.name AS mpa_name, m.description AS mpa_description, " +
                 "FROM likes l " +
                 "JOIN films f on  l.film_id = f.film_id " +
-                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.mpa_id" +
+                "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.mpa_id " +
                 "WHERE l.film_id IN (SELECT likes.film_id FROM likes WHERE user_id = ? INTERSECT " +
                 "SELECT likes.film_id FROM likes WHERE user_id = ? ) " +
                 "GROUP BY l.film_id " +
