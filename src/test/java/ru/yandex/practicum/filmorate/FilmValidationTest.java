@@ -31,10 +31,10 @@ public class FilmValidationTest {
         MpaDbStorage mpaStorage = Mockito.mock(MpaDbStorage.class);
         GenreDbStorage genreStorage = Mockito.mock(GenreDbStorage.class);
         DirectorDbStorage directorStorage = Mockito.mock(DirectorDbStorage.class);
-        FilmService filmService = new FilmService(
-                filmStorage, userStorage, mpaStorage, genreStorage, directorStorage
-        );
         EventService eventService = Mockito.mock(EventService.class);
+        FilmService filmService = new FilmService(
+                filmStorage, userStorage, mpaStorage, genreStorage, directorStorage, eventService
+        );
         filmController = new FilmController(filmService);
     }
 
