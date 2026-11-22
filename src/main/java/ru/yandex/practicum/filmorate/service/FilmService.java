@@ -72,13 +72,6 @@ public class FilmService {
         return popular;
     }
 
-    /*public List<Film> getPopular(int count) {
-        if (count <= 0) {
-            throw new ValidationException("Параметр count должен быть положительным числом");
-        }
-        return filmStorage.getPopular(count);
-    }*/
-
     public List<Film> getDirectorFilms(Long directorId, String sortBy) {
         directorStorage.getById(directorId)
                 .orElseThrow(() -> new NotFoundException(String.format("Режиссёр с id = %d не найден", directorId)));
