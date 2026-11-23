@@ -2,9 +2,11 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -17,6 +19,9 @@ import java.util.List;
 public class UserService {
 
     private final UserStorage userStorage;
+
+    @Autowired
+    private EventService eventService;
 
     public User create(User user) {
         validateUser(user);
@@ -48,12 +53,14 @@ public class UserService {
     public void addFriend(Long userId, Long friendId) {
         getById(userId);
         getById(friendId);
+        eventService.putUserEvent(userId, "FRIEND", "ADD", friendId);
         userStorage.addFriend(userId, friendId);
     }
 
     public void removeFriend(Long userId, Long friendId) {
         getById(userId);
         getById(friendId);
+        eventService.putUserEvent(userId, "FRIEND", "REMOVE", friendId);
         userStorage.removeFriend(userId, friendId);
     }
 
@@ -66,6 +73,11 @@ public class UserService {
         getById(userId);
         getById(otherId);
         return userStorage.getCommonFriends(userId, otherId);
+    }
+
+    public List<Event> getEventsByUserId(Long id) {
+        getById(id);
+        return eventService.getEventsByUserId(id);
     }
 
     private void validateUser(User user) {

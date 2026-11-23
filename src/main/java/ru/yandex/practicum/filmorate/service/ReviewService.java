@@ -20,6 +20,7 @@ public class ReviewService {
     private final ReviewStorage reviewStorage;
     private final UserStorage userStorage;
     private final FilmStorage filmStorage;
+    private final EventService eventService;
 
     public Review create(Review review) {
         validateReview(review);
@@ -31,6 +32,7 @@ public class ReviewService {
             throw new NotFoundException("Фильм с id=" + review.getFilmId() + " не найден");
         }
         Review created = reviewStorage.add(review);
+        eventService.putReviewEvent(review.getUserId(), "REVIEW", "ADD", created.getReviewId());
         log.info("Добавлен отзыв: id={}, filmId={}, userId={}", created.getReviewId(), created.getFilmId(), created.getUserId());
         return created;
     }
@@ -40,6 +42,7 @@ public class ReviewService {
             throw new NotFoundException("Отзыв с id=" + review.getReviewId() + " не найден");
         }
         Review updated = reviewStorage.update(review);
+        eventService.putReviewEvent(review.getUserId(), "REVIEW", "UPDATE", updated.getReviewId());
         log.info("Обновлён отзыв: id={}", updated.getReviewId());
         return updated;
     }
@@ -48,6 +51,8 @@ public class ReviewService {
         if (reviewStorage.getById(reviewId).isEmpty()) {
             throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
         }
+        eventService.putReviewEvent(reviewStorage.getById(reviewId).get().getUserId(),
+                "REVIEW", "REMOVE", reviewStorage.getById(reviewId).get().getReviewId());
         reviewStorage.delete(reviewId);
         log.info("Удалён отзыв: id={}", reviewId);
     }

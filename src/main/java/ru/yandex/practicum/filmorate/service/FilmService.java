@@ -21,7 +21,9 @@ public class FilmService {
     private final UserDbStorage userStorage;
     private final MpaDbStorage mpaStorage;
     private final GenreDbStorage genreStorage;
+
     private final DirectorDbStorage directorStorage;
+    private final EventService eventService;
 
     public Film create(Film film) {
         validateFilm(film);
@@ -53,12 +55,14 @@ public class FilmService {
     public void addLike(Long filmId, Long userId) {
         checkFilmExists(filmId);
         checkUserExists(userId);
+        eventService.putFilmEvent(userId, "LIKE", "ADD", filmId);
         filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(Long filmId, Long userId) {
         checkFilmExists(filmId);
         checkUserExists(userId);
+        eventService.putFilmEvent(userId, "LIKE", "REMOVE", filmId);
         filmStorage.removeLike(filmId, userId);
     }
 

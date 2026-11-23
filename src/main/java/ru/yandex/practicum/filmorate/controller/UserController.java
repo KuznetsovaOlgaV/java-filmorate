@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -58,4 +59,10 @@ public class UserController {
     public void deleteUser(@PathVariable Long userId) {
         userService.delete(userId);
     }
+
+    @GetMapping("/{id}/feed")
+    public List<Event> getEventsByUserId(@PathVariable Long id) {
+        return userService.getEventsByUserId(id);
+    }
+
 }
