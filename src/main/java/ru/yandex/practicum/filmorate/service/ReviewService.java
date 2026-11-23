@@ -38,11 +38,14 @@ public class ReviewService {
     }
 
     public Review update(Review review) {
-        if (review.getReviewId() == null || reviewStorage.getById(review.getReviewId()).isEmpty()) {
-            throw new NotFoundException("Отзыв с id=" + review.getReviewId() + " не найден");
+        if (review.getReviewId() == null) {
+            throw new NotFoundException("Отзыв с id=null не найден");
         }
+        Review existing = reviewStorage.getById(review.getReviewId())
+                .orElseThrow(() -> new NotFoundException("Отзыв с id=" + review.getReviewId() + " не найден"));
+
         Review updated = reviewStorage.update(review);
-        eventService.putReviewEvent(review.getUserId(), "REVIEW", "UPDATE", updated.getReviewId());
+        eventService.putReviewEvent(existing.getUserId(), "REVIEW", "UPDATE", updated.getReviewId());
         log.info("Обновлён отзыв: id={}", updated.getReviewId());
         return updated;
     }
