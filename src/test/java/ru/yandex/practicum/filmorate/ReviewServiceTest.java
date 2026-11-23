@@ -45,12 +45,10 @@ class ReviewServiceTest {
     private ReviewService reviewService;
 
     private Review review;
-    private User user;
     private Film film;
 
     @BeforeEach
     void setUp() {
-        user = User.builder().id(1L).build();
         film = Film.builder().id(2L).build();
         review = Review.builder()
                 .reviewId(10L)
@@ -66,7 +64,7 @@ class ReviewServiceTest {
 
     @Test
     void createWhenAllValidThenCallsStorage() {
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+        when(userStorage.existsById(1L)).thenReturn(true);
         when(filmStorage.getById(2L)).thenReturn(Optional.of(film));
         when(reviewStorage.add(review)).thenReturn(review);
 
@@ -121,7 +119,7 @@ class ReviewServiceTest {
 
     @Test
     void createWhenUserMissingThenNotFoundException() {
-        when(userStorage.getById(1L)).thenReturn(Optional.empty());
+        when(userStorage.existsById(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> reviewService.create(review))
                 .isInstanceOf(NotFoundException.class)
@@ -132,7 +130,7 @@ class ReviewServiceTest {
 
     @Test
     void createWhenFilmMissingThenNotFoundException() {
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+        when(userStorage.existsById(1L)).thenReturn(true);
         when(filmStorage.getById(2L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> reviewService.create(review))
@@ -220,7 +218,7 @@ class ReviewServiceTest {
     @Test
     void addLikeWhenAllExistThenCallsStorage() {
         when(reviewStorage.getById(10L)).thenReturn(Optional.of(review));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+        when(userStorage.existsById(1L)).thenReturn(true);
 
         reviewService.addLike(10L, 1L);
 
@@ -239,7 +237,7 @@ class ReviewServiceTest {
     @Test
     void addLikeWhenUserMissingThenNotFoundException() {
         when(reviewStorage.getById(10L)).thenReturn(Optional.of(review));
-        when(userStorage.getById(1L)).thenReturn(Optional.empty());
+        when(userStorage.existsById(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> reviewService.addLike(10L, 1L))
                 .isInstanceOf(NotFoundException.class);
@@ -248,7 +246,7 @@ class ReviewServiceTest {
     @Test
     void addDislikeThenCallsAddMarkWithFalse() {
         when(reviewStorage.getById(10L)).thenReturn(Optional.of(review));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+        when(userStorage.existsById(1L)).thenReturn(true);
 
         reviewService.addDislike(10L, 1L);
 
@@ -258,7 +256,7 @@ class ReviewServiceTest {
     @Test
     void removeLikeThenCallsRemoveMarkWithTrue() {
         when(reviewStorage.getById(10L)).thenReturn(Optional.of(review));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+        when(userStorage.existsById(1L)).thenReturn(true);
 
         reviewService.removeLike(10L, 1L);
 
@@ -268,7 +266,7 @@ class ReviewServiceTest {
     @Test
     void removeDislikeThenCallsRemoveMarkWithFalse() {
         when(reviewStorage.getById(10L)).thenReturn(Optional.of(review));
-        when(userStorage.getById(1L)).thenReturn(Optional.of(user));
+        when(userStorage.existsById(1L)).thenReturn(true);
 
         reviewService.removeDislike(10L, 1L);
 

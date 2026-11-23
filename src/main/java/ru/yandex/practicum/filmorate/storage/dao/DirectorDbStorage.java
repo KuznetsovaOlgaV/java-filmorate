@@ -12,9 +12,13 @@ import ru.yandex.practicum.filmorate.storage.mapper.DirectorRowMapper;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Repository
@@ -67,5 +71,14 @@ public class DirectorDbStorage {
             throw new NotFoundException(String.format("Режиссёр с id = %d не найден", id));
         }
         log.info("Режиссёр с ID {} удалён", id);
+    }
+
+    public Set<Long> getExistingIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Set.of();
+        }
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        String sql = "SELECT director_id FROM directors WHERE director_id IN (" + placeholders + ")";
+        return new HashSet<>(jdbcTemplate.query(sql, (rs, rowNum) -> rs.getLong("director_id"), ids.toArray()));
     }
 }

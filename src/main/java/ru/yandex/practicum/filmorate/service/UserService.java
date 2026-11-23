@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -19,9 +18,7 @@ import java.util.List;
 public class UserService {
 
     private final UserStorage userStorage;
-
-    @Autowired
-    private EventService eventService;
+    private final EventService eventService;
 
     public User create(User user) {
         validateUser(user);
@@ -30,7 +27,7 @@ public class UserService {
     }
 
     public User update(User user) {
-        getById(user.getId());
+        checkUserExists(user.getId());
         validateUser(user);
         validateName(user);
         return userStorage.update(user);
@@ -46,37 +43,37 @@ public class UserService {
     }
 
     public void delete(Long id) {
-        getById(id);
+        checkUserExists(id);
         userStorage.delete(id);
     }
 
     public void addFriend(Long userId, Long friendId) {
-        getById(userId);
-        getById(friendId);
-        eventService.putUserEvent(userId, "FRIEND", "ADD", friendId);
+        checkUserExists(userId);
+        checkUserExists(friendId);
+        eventService.addFriendEvent(userId, friendId);
         userStorage.addFriend(userId, friendId);
     }
 
     public void removeFriend(Long userId, Long friendId) {
-        getById(userId);
-        getById(friendId);
-        eventService.putUserEvent(userId, "FRIEND", "REMOVE", friendId);
+        checkUserExists(userId);
+        checkUserExists(friendId);
+        eventService.removeFriendEvent(userId, friendId);
         userStorage.removeFriend(userId, friendId);
     }
 
     public List<User> getFriends(Long userId) {
-        getById(userId);
+        checkUserExists(userId);
         return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(Long userId, Long otherId) {
-        getById(userId);
-        getById(otherId);
+        checkUserExists(userId);
+        checkUserExists(otherId);
         return userStorage.getCommonFriends(userId, otherId);
     }
 
     public List<Event> getEventsByUserId(Long id) {
-        getById(id);
+        checkUserExists(id);
         return eventService.getEventsByUserId(id);
     }
 
@@ -95,6 +92,12 @@ public class UserService {
     private void validateName(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
+        }
+    }
+
+    private void checkUserExists(Long id) {
+        if (!userStorage.existsById(id)) {
+            throw new NotFoundException(String.format("Пользователь с id = %d не найден", id));
         }
     }
 }

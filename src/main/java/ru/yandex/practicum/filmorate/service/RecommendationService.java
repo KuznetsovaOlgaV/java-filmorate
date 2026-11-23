@@ -17,8 +17,9 @@ public class RecommendationService {
     private final UserStorage userStorage;
 
     public List<Film> getRecommendations(Long userId) {
-        userStorage.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
+        if (!userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с ID " + userId + " не найден");
+        }
         return recommendationDbStorage.getRecommendations(userId);
     }
 }

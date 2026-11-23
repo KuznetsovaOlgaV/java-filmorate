@@ -12,9 +12,7 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.mapper.DirectorRowMapper;
 import ru.yandex.practicum.filmorate.storage.mapper.FilmRowMapper;
-import ru.yandex.practicum.filmorate.storage.mapper.GenreRowMapper;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -29,8 +27,11 @@ import java.util.stream.Collectors;
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
     private final FilmRowMapper filmRowMapper;
-    private final DirectorRowMapper directorRowMapper;
-    private final GenreRowMapper genreRowMapper;
+    private static final String SEARCH_BY_TITLE = "title";
+    private static final String SEARCH_BY_DIRECTOR = "director";
+    private static final String SEARCH_BY_DESCRIPTION = "description";
+    private static final Set<String> DEFAULT_SEARCH_FIELDS = Set.of(SEARCH_BY_TITLE, SEARCH_BY_DIRECTOR);
+    private static final String SORT_BY_LIKES = "likes";
 
     private static final String BASE_FILM_SELECT =
             "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
@@ -48,7 +49,11 @@ public class FilmDbStorage implements FilmStorage {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, film.getName());
             ps.setString(2, film.getDescription());
-            ps.setDate(3, Date.valueOf(film.getReleaseDate()));
+            if (film.getReleaseDate() != null) {
+                ps.setDate(3, Date.valueOf(film.getReleaseDate()));
+            } else {
+                ps.setNull(3, java.sql.Types.DATE);
+            }
             ps.setInt(4, film.getDuration());
             if (film.getMpa() != null) {
                 ps.setInt(5, film.getMpa().getId());
@@ -74,7 +79,7 @@ public class FilmDbStorage implements FilmStorage {
         int rowsUpdated = jdbcTemplate.update(sql,
                 film.getName(),
                 film.getDescription(),
-                Date.valueOf(film.getReleaseDate()),
+                film.getReleaseDate() != null ? Date.valueOf(film.getReleaseDate()) : null,
                 film.getDuration(),
                 film.getMpa() != null ? film.getMpa().getId() : null,
                 film.getId()
@@ -163,28 +168,26 @@ public class FilmDbStorage implements FilmStorage {
 
         sql.append("ORDER BY likes_count DESC");
 
-        return jdbcTemplate.query(
+        List<Film> films = jdbcTemplate.query(
                 sql.toString(),
                 ps -> {
-                    ps.setMaxRows(count);
+                    if (count != null) {
+                        ps.setMaxRows(count);
+                    }
                     for (int i = 0; i < params.size(); i++) {
                         ps.setObject(i + 1, params.get(i));
                     }
                 },
-                (rs, rowNum) -> {
-                    Film film = filmRowMapper.mapRow(rs, rowNum);
-                    if (film != null) {
-                        film.setGenres(loadGenres(film.getId()));
-                        film.setDirectors(loadDirectors(film.getId()));
-                    }
-                    return film;
-                }
+                filmRowMapper
         );
+        loadGenresForFilms(films);
+        loadDirectorsForFilms(films);
+        return films;
     }
 
     public List<Film> getDirectorFilms(Long directorId, String sortBy) {
         String sql;
-        if ("likes".equals(sortBy)) {
+        if (SORT_BY_LIKES.equals(sortBy)) {
             sql = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
                     "f.mpa_rating_id, m.name AS mpa_name, m.description AS mpa_description, " +
                     "COUNT(l.user_id) AS likes_count " +
@@ -209,17 +212,20 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     public List<Film> getCommon(Long userId, Long friendId) {
-        String sql = "SELECT l.film_id, f.name, f.description, f.release_date, f.duration, COUNT(*) as likes_count, " +
+        String sql = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
                 "f.mpa_rating_id, m.name AS mpa_name, m.description AS mpa_description, " +
-                "FROM likes l " +
-                "JOIN films f on  l.film_id = f.film_id " +
+                "(SELECT COUNT(*) FROM likes l WHERE l.film_id = f.film_id) AS likes_count " +
+                "FROM films f " +
                 "LEFT JOIN mpa_ratings m ON f.mpa_rating_id = m.mpa_id " +
-                "WHERE l.film_id IN (SELECT likes.film_id FROM likes WHERE user_id = ? INTERSECT " +
-                "SELECT likes.film_id FROM likes WHERE user_id = ? ) " +
-                "GROUP BY l.film_id " +
+                "WHERE f.film_id IN (" +
+                "    SELECT film_id FROM likes WHERE user_id = ? " +
+                "    INTERSECT " +
+                "    SELECT film_id FROM likes WHERE user_id = ?" +
+                ") " +
                 "ORDER BY likes_count DESC";
         List<Film> films = jdbcTemplate.query(sql, filmRowMapper, userId, friendId);
         loadGenresForFilms(films);
+        loadDirectorsForFilms(films);
         return films;
     }
 
@@ -311,11 +317,12 @@ public class FilmDbStorage implements FilmStorage {
         List<String> conditions = new ArrayList<>();
         List<Object> params = new ArrayList<>();
 
-        if (fields.contains("title")) {
+        if (fields.contains(SEARCH_BY_TITLE)) {
             conditions.add("LOWER(f.name) LIKE ?");
             params.add(pattern);
         }
-        if (fields.contains("director")) {
+
+        if (fields.contains(SEARCH_BY_DIRECTOR)) {
             conditions.add(
                     "EXISTS (SELECT 1 FROM film_directors fd " +
                             "JOIN directors d ON d.director_id = fd.director_id " +
@@ -323,6 +330,13 @@ public class FilmDbStorage implements FilmStorage {
             );
             params.add(pattern);
         }
+
+        //поиск по описанию фильма
+        if (fields.contains(SEARCH_BY_DESCRIPTION)) {
+            conditions.add("LOWER(f.description) LIKE ?");
+            params.add(pattern);
+        }
+
         if (conditions.isEmpty()) return List.of();
 
         String sql = "SELECT f.*, " +
@@ -334,36 +348,20 @@ public class FilmDbStorage implements FilmStorage {
                 "WHERE " + String.join(" OR ", conditions) + " " +
                 "ORDER BY likes_count DESC";
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
-            Film film = filmRowMapper.mapRow(rs, rowNum);
-            if (film != null) {
-                film.setGenres(loadGenres(film.getId()));
-                film.setDirectors(loadDirectors(film.getId()));
-            }
-            return film;
-        }, params.toArray());
-    }
-
-    private LinkedHashSet<Director> loadDirectors(Long filmId) {
-        String sql = "SELECT d.* FROM directors d " +
-                "JOIN film_directors fd ON fd.director_id = d.director_id " +
-                "WHERE fd.film_id = ? ORDER BY d.director_id";
-        return new LinkedHashSet<>(jdbcTemplate.query(sql, directorRowMapper, filmId));
-    }
-
-    private LinkedHashSet<Genre> loadGenres(Long filmId) {
-        String sql = "SELECT g.* FROM genres g " +
-                "JOIN film_genres fg ON fg.genre_id = g.genre_id " +
-                "WHERE fg.film_id = ? ORDER BY g.genre_id";
-        return new LinkedHashSet<>(jdbcTemplate.query(sql, genreRowMapper, filmId));
+        List<Film> films = jdbcTemplate.query(sql, filmRowMapper, params.toArray());
+        loadGenresForFilms(films);
+        loadDirectorsForFilms(films);
+        return films;
     }
 
     private Set<String> parseSearchFields(String by) {
-        if (by == null || by.isBlank()) return Set.of("title", "director");
+        if (by == null || by.isBlank()) return DEFAULT_SEARCH_FIELDS;
         Set<String> result = new HashSet<>();
         for (String part : by.toLowerCase().split(",")) {
             String t = part.trim();
-            if (t.equals("title") || t.equals("director")) result.add(t);
+            if (t.equals(SEARCH_BY_TITLE) || t.equals(SEARCH_BY_DIRECTOR) || t.equals(SEARCH_BY_DESCRIPTION)) {
+                result.add(t);
+            }
         }
         return result;
     }

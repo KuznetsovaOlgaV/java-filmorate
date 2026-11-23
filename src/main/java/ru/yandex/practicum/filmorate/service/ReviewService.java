@@ -22,17 +22,19 @@ public class ReviewService {
     private final FilmStorage filmStorage;
     private final EventService eventService;
 
+    private static final int DEFAULT_REVIEWS_LIMIT = 10;
+
     public Review create(Review review) {
         validateReview(review);
 
-        if (userStorage.getById(review.getUserId()).isEmpty()) {
+        if (!userStorage.existsById(review.getUserId())) {
             throw new NotFoundException("Пользователь с id=" + review.getUserId() + " не найден");
         }
         if (filmStorage.getById(review.getFilmId()).isEmpty()) {
             throw new NotFoundException("Фильм с id=" + review.getFilmId() + " не найден");
         }
         Review created = reviewStorage.add(review);
-        eventService.putReviewEvent(review.getUserId(), "REVIEW", "ADD", created.getReviewId());
+        eventService.addReviewEvent(review.getUserId(), created.getReviewId());
         log.info("Добавлен отзыв: id={}, filmId={}, userId={}", created.getReviewId(), created.getFilmId(), created.getUserId());
         return created;
     }
@@ -45,17 +47,15 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException("Отзыв с id=" + review.getReviewId() + " не найден"));
 
         Review updated = reviewStorage.update(review);
-        eventService.putReviewEvent(existing.getUserId(), "REVIEW", "UPDATE", updated.getReviewId());
+        eventService.updateReviewEvent(existing.getUserId(), updated.getReviewId());
         log.info("Обновлён отзыв: id={}", updated.getReviewId());
         return updated;
     }
 
     public void delete(Long reviewId) {
-        if (reviewStorage.getById(reviewId).isEmpty()) {
-            throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
-        }
-        eventService.putReviewEvent(reviewStorage.getById(reviewId).get().getUserId(),
-                "REVIEW", "REMOVE", reviewStorage.getById(reviewId).get().getReviewId());
+        Review existing = reviewStorage.getById(reviewId)
+                .orElseThrow(() -> new NotFoundException("Отзыв с id=" + reviewId + " не найден"));
+        eventService.removeReviewEvent(existing.getUserId(), existing.getReviewId());
         reviewStorage.delete(reviewId);
         log.info("Удалён отзыв: id={}", reviewId);
     }
@@ -66,7 +66,7 @@ public class ReviewService {
     }
 
     public List<Review> getReviewsForFilm(Long filmId, Integer count) {
-        int limit = (count == null || count <= 0) ? 10 : count;
+        int limit = (count == null || count <= 0) ? DEFAULT_REVIEWS_LIMIT : count;
         if (filmId == null) {
             return reviewStorage.findAll(limit);
         }
@@ -101,7 +101,7 @@ public class ReviewService {
         if (reviewStorage.getById(reviewId).isEmpty()) {
             throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
         }
-        if (userStorage.getById(userId).isEmpty()) {
+        if (!userStorage.existsById(userId)) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
     }
