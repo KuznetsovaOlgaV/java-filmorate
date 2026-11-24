@@ -39,8 +39,11 @@ public class Film {
     private Mpa mpa;
 
     @Builder.Default
-    private LinkedHashSet<Genre> genres = new LinkedHashSet<>();
+    private Set<Long> likes = new HashSet<>();
 
     @Builder.Default
-    private Set<Long> likes = new HashSet<>();
+    private Set<Genre> genres = new LinkedHashSet<>();
+
+    @Builder.Default
+    private Set<Director> directors = new LinkedHashSet<>();
 }

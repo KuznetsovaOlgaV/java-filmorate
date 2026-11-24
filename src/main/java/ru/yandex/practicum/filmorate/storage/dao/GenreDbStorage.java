@@ -7,11 +7,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.mapper.GenreRowMapper;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -60,5 +56,14 @@ public class GenreDbStorage {
         if (genresByFilmId != null) {
             films.forEach(film -> film.setGenres(genresByFilmId.getOrDefault(film.getId(), new LinkedHashSet<>())));
         }
+    }
+
+    public Set<Integer> getExistingIds(Collection<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Set.of();
+        }
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        String sql = "SELECT genre_id FROM genres WHERE genre_id IN (" + placeholders + ")";
+        return new HashSet<>(jdbcTemplate.query(sql, (rs, rowNum) -> rs.getInt("genre_id"), ids.toArray()));
     }
 }

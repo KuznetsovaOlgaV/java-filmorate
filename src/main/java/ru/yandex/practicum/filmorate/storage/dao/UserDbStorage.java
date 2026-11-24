@@ -95,4 +95,11 @@ public class UserDbStorage implements UserStorage {
                 "ORDER BY u.user_id";
         return jdbcTemplate.query(sql, userRowMapper, userId, otherId);
     }
+
+    @Override
+    public boolean existsById(Long id) {
+        String sql = "SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)";
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(sql, Boolean.class, id));
+    }
+
 }
