@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Event;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
@@ -19,6 +21,7 @@ public class UserService {
 
     private final UserStorage userStorage;
     private final EventService eventService;
+    private final FilmStorage filmStorage;
 
     public User create(User user) {
         validateUser(user);
@@ -75,6 +78,11 @@ public class UserService {
     public List<Event> getEventsByUserId(Long id) {
         checkUserExists(id);
         return eventService.getEventsByUserId(id);
+    }
+
+    public List<Film> getRecommendations(Long userId) {
+        checkUserExists(userId);
+        return filmStorage.getRecommendations(userId);
     }
 
     private void validateUser(User user) {

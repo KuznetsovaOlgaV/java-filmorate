@@ -65,4 +65,8 @@ public class EventService {
         putReviewEvent(userId, EventType.REVIEW, Operation.REMOVE, reviewId);
     }
 
+    public void updateLikeEvent(Long userId, Long filmId) {
+        putFilmEvent(userId, EventType.LIKE, Operation.UPDATE, filmId);
+    }
+
 }

@@ -19,7 +19,9 @@ public class FilmRowMapper implements RowMapper<Film> {
                 .description(rs.getString("description"))
                 .releaseDate(rs.getDate("release_date").toLocalDate())
                 .duration(rs.getInt("duration"))
+                .rating(rs.getDouble("rating"))
                 .genres(new LinkedHashSet<>())
+                .directors(new LinkedHashSet<>())
                 .build();
 
         int mpaId = rs.getInt("mpa_rating_id");
@@ -31,7 +33,6 @@ public class FilmRowMapper implements RowMapper<Film> {
                     .build();
             film.setMpa(mpa);
         }
-
         return film;
     }
 }

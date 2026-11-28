@@ -244,27 +244,26 @@ class FilmorateApplicationTests {
     }
 
     @Test
-    @DisplayName("Добавление лайка, получение популярных фильмов и удаление лайка")
-    void testLikeAndPopularFilms() {
+    @DisplayName("Выставление оценки, получение популярных фильмов по среднему рейтингу и удаление оценки")
+    void testRatingAndPopularFilms() {
         User user1 = userStorage.create(createSampleUser("like1@mail.ru", "like1", "L1"));
         User user2 = userStorage.create(createSampleUser("like2@mail.ru", "like2", "L2"));
+        Film film1 = filmStorage.create(createSampleFilm("Менее рейтинговый", 1));
+        Film film2 = filmStorage.create(createSampleFilm("Самый рейтинговый", 1));
 
-        Film film1 = filmStorage.create(createSampleFilm("Менее популярный", 1));
-        Film film2 = filmStorage.create(createSampleFilm("Самый популярный", 1));
-
-        filmStorage.addLike(film1.getId(), user1.getId());
-        filmStorage.addLike(film2.getId(), user1.getId());
-        filmStorage.addLike(film2.getId(), user2.getId());
+        filmStorage.upsertRating(film1.getId(), user1.getId(), 6);
+        filmStorage.upsertRating(film2.getId(), user1.getId(), 9);
+        filmStorage.upsertRating(film2.getId(), user2.getId(), 10);
 
         List<Film> popular = filmStorage.getPopular(2, null, null);
-
         assertThat(popular)
                 .isNotEmpty()
                 .hasSize(2);
         assertThat(popular.get(0).getId()).isEqualTo(film2.getId());
+        assertThat(popular.get(0).getRating()).isEqualTo(9.5);
 
-        filmStorage.removeLike(film2.getId(), user1.getId());
-        filmStorage.removeLike(film2.getId(), user2.getId());
+        filmStorage.removeRating(film2.getId(), user1.getId());
+        filmStorage.removeRating(film2.getId(), user2.getId());
 
         List<Film> popularAfterRemove = filmStorage.getPopular(1, null, null);
         assertThat(popularAfterRemove.get(0).getId()).isEqualTo(film1.getId());

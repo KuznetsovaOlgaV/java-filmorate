@@ -26,6 +26,10 @@ public class FilmService {
     private static final int DEFAULT_POPULAR_LIMIT = 10;
     private static final int MAX_DESCRIPTION_LENGTH = 200;
 
+    private static final int MIN_RATING = 1;
+    private static final int MAX_RATING = 10;
+    private static final String SORT_BY_RATING = "rating";
+
     private final FilmDbStorage filmStorage;
     private final UserDbStorage userStorage;
     private final MpaDbStorage mpaStorage;
@@ -59,20 +63,6 @@ public class FilmService {
     public void delete(Long id) {
         checkFilmExists(id);
         filmStorage.delete(id);
-    }
-
-    public void addLike(Long filmId, Long userId) {
-        checkFilmExists(filmId);
-        checkUserExists(userId);
-        eventService.addLikeEvent(userId, filmId);
-        filmStorage.addLike(filmId, userId);
-    }
-
-    public void removeLike(Long filmId, Long userId) {
-        checkFilmExists(filmId);
-        checkUserExists(userId);
-        eventService.removeLikeEvent(userId, filmId);
-        filmStorage.removeLike(filmId, userId);
     }
 
     public List<Film> getPopular(Integer count, Integer genreId, Integer year) {
@@ -181,5 +171,27 @@ public class FilmService {
                 }
             }
         }
+    }
+
+    public void addRating(Long filmId, Long userId, Integer rating) {
+        if (rating == null || rating < MIN_RATING || rating > MAX_RATING) {
+            throw new ValidationException("Оценка должна быть в диапазоне от 1 до 10");
+        }
+        checkFilmExists(filmId);
+        checkUserExists(userId);
+
+        boolean isNew = filmStorage.upsertRating(filmId, userId, rating);
+        if (isNew) {
+            eventService.addLikeEvent(userId, filmId);
+        } else {
+            eventService.updateLikeEvent(userId, filmId);
+        }
+    }
+
+    public void removeRating(Long filmId, Long userId) {
+        checkFilmExists(filmId);
+        checkUserExists(userId);
+        filmStorage.removeRating(filmId, userId);
+        eventService.removeLikeEvent(userId, filmId);
     }
 }
