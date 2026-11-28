@@ -11,8 +11,9 @@ import lombok.NoArgsConstructor;
 import ru.yandex.practicum.filmorate.validator.MinimumDate;
 
 import java.time.LocalDate;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Data
@@ -39,11 +40,14 @@ public class Film {
     private Mpa mpa;
 
     @Builder.Default
-    private Set<Long> likes = new HashSet<>();
-
-    @Builder.Default
     private Set<Genre> genres = new LinkedHashSet<>();
 
     @Builder.Default
     private Set<Director> directors = new LinkedHashSet<>();
+
+    @Builder.Default
+    private Map<Long, Integer> ratings = new HashMap<>();
+
+    @Builder.Default
+    private Double rating = 0.0;
 }

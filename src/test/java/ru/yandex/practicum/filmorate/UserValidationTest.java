@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import org.mockito.Mockito;
 import ru.yandex.practicum.filmorate.service.EventService;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 
 import java.time.LocalDate;
 
@@ -20,7 +21,8 @@ class UserValidationTest {
     @BeforeEach
     void setUp() {
         InMemoryUserStorage userStorage = new InMemoryUserStorage();
-        UserService userService = new UserService(userStorage, Mockito.mock(EventService.class));
+        EventService eventService = Mockito.mock(EventService.class);
+        UserService userService = new UserService(userStorage, eventService, new InMemoryFilmStorage());
         userController = new UserController(userService);
     }
 

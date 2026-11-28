@@ -16,11 +16,14 @@ public interface FilmStorage {
 
     Optional<Film> getById(Long id);
 
-    void addLike(Long filmId, Long userId);
-
-    void removeLike(Long filmId, Long userId);
-
     List<Film> getPopular(Integer count, Integer genreId, Integer year);
 
     List<Film> search(String query, String by);
+
+    boolean upsertRating(Long filmId, Long userId, int rating);
+
+    void removeRating(Long filmId, Long userId);
+
+    List<Film> getRecommendations(Long userId);
+
 }
